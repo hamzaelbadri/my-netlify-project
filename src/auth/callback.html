@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Authentication Callback</title>
+  <script>
+    window.onload = function() {
+      // Parse the access token from the URL hash
+      function getHashParams() {
+        const hash = window.location.hash.substring(1);
+        return hash.split('&').reduce((params, item) => {
+          const [key, value] = item.split('=');
+          params[key] = decodeURIComponent(value);
+          return params;
+        }, {});
+      }
+
+      // Send the token back to the main window
+      const params = getHashParams();
+      if (params.access_token) {
+        if (window.opener) {
+          window.opener.postMessage(
+            {
+              type: 'facebook-auth',
+              accessToken: params.access_token,
+              expiresIn: params.expires_in,
+              state: params.state
+            },
+            window.location.origin
+          );
+          window.close();
+        } else {
+          // If no opener, redirect back to the main app
+          window.location.href = '/';
+        }
+      } else if (params.error) {
+        if (window.opener) {
+          window.opener.postMessage(
+            {
+              type: 'facebook-auth-error',
+              error: params.error,
+              errorDescription: params.error_description
+            },
+            window.location.origin
+          );
+          window.close();
+        } else {
+          // If no opener, redirect back to the main app with error
+          window.location.href = `/?error=${encodeURIComponent(params.error)}`;
+        }
+      }
+    };
+  </script>
+</head>
+<body>
+  <div style="display: flex; justify-content: center; align-items: center; height: 100vh; font-family: system-ui, -apple-system, sans-serif;">
+    <div style="text-align: center;">
+      <div style="border: 2px solid #1877F2; border-radius: 50%; width: 40px; height: 40px; margin: 0 auto 16px; animation: spin 1s linear infinite;"></div>
+      <p style="color: #1c1e21; margin: 0;">Completing authentication, please wait...</p>
+    </div>
+  </div>
+  <style>
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</body>
+</html>
